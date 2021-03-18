@@ -1,0 +1,489 @@
+/*  CREATE OBJECT TYPES.  */
+CREATE TYPE name_t AS OBJECT(
+  firstn VARCHAR2(15),
+  lastn VARCHAR2(15),
+  MEMBER FUNCTION fullname
+      RETURN VARCHAR2
+);
+/
+
+CREATE TYPE address_t AS OBJECT(
+  stnum CHAR(5),
+  stname VARCHAR2(20),
+  city VARCHAR2(15),
+  postcode VARCHAR2(6),
+  MEMBER FUNCTION a_address
+      RETURN VARCHAR2
+);
+/
+
+CREATE TYPE account_t AS OBJECT(
+  aid CHAR(5),
+  sname name_t,
+  accaddr address_t,
+  yofb INTEGER,
+  phone INTEGER,
+  MEMBER FUNCTION age (cyear IN INTEGER)
+      RETURN INTEGER
+);
+/
+
+CREATE TYPE rented_t AS OBJECT(
+  rid CHAR(5),
+  aoid REF account_t,
+  itmsrent NUMBER(2),
+  latepenalties NUMBER(2),
+  itmsreturn NUMBER(3),
+  balance NUMBER(5,2),
+  MEMBER FUNCTION redflag
+      RETURN VARCHAR2,
+  MEMBER FUNCTION avgreturn
+      RETURN NUMBER
+);
+/
+
+CREATE TYPE author_t AS OBJECT(
+  au_id CHAR(5),
+  sname name_t,
+  yofb INTEGER,
+  MAP MEMBER FUNCTION bio
+      RETURN VARCHAR2
+);
+/
+
+CREATE TYPE library_t AS OBJECT(
+  lid CHAR(3),
+  libname VARCHAR2(20),
+  libaddr address_t
+);
+/
+
+CREATE TYPE publisher_t AS OBJECT(
+  pid CHAR(4),
+  pubname VARCHAR2(15),
+  pubaddr address_t
+);
+/
+
+CREATE TYPE item_t AS OBJECT(
+  iid CHAR(5),
+  itm_qty INTEGER,
+  rented_no INTEGER,
+  in_transit INTEGER,
+  auo_id REF author_t,
+  yr_release INTEGER,
+  loid REF library_t,
+  MEMBER FUNCTION author_year
+      RETURN VARCHAR2
+);
+/
+
+ALTER TYPE item_t NOT FINAL;
+
+CREATE TYPE book_t UNDER item_t(
+  book_name VARCHAR2(20),
+  poid REF publisher_t
+);
+/
+
+CREATE TYPE video_t UNDER item_t(
+  vid_name VARCHAR2(20)
+);
+/
+
+CREATE TYPE transaction_t AS OBJECT(
+  tid CHAR(6),
+  aoid REF account_t,
+  ioid REF item_t,
+  duedate DATE
+);
+/
+
+/*  CREATE OBJECT TABLES.  */
+CREATE TABLE acct OF account_t (aid PRIMARY KEY);
+CREATE TABLE rented OF rented_t (rid PRIMARY KEY);
+CREATE TABLE auth OF author_t (au_id PRIMARY KEY);
+CREATE TABLE lib OF library_t (lid PRIMARY KEY);
+CREATE TABLE publish OF publisher_t (pid PRIMARY KEY);
+CREATE TABLE book_item OF book_t (iid PRIMARY KEY);
+CREATE TABLE video_item OF video_t (iid PRIMARY KEY);
+CREATE TABLE txn OF transaction_t (tid PRIMARY KEY);
+/
+
+/*  CREATE TYPE BODY.  */
+CREATE TYPE BODY name_t
+  AS MEMBER FUNCTION fullname
+      RETURN VARCHAR2
+  IS
+  BEGIN
+    RETURN SELF.firstn||' '||SELF.lastn;
+  END;
+  END;
+/
+
+CREATE TYPE BODY address_t
+  AS MEMBER FUNCTION a_address
+      RETURN VARCHAR2
+  IS
+  BEGIN
+      RETURN SELF.stnum||' '||SELF.stname||' '||SELF.city||' '||SELF.postcode;
+  END;
+  END;
+/
+
+CREATE TYPE BODY account_t
+  AS MEMBER FUNCTION age (cyear IN INTEGER)
+      RETURN INTEGER
+  IS
+  BEGIN
+      RETURN cyear - SELF.yofb;
+  END;
+  END;
+/
+
+CREATE TYPE BODY author_t
+  AS MAP MEMBER FUNCTION bio
+      RETURN VARCHAR2
+  IS
+  BEGIN
+      RETURN SELF.sname.lastn||' '||SELF.yofb;
+  END;
+  END;
+/
+
+CREATE TYPE BODY rented_t
+  AS MEMBER FUNCTION avgreturn
+      RETURN NUMBER
+  IS
+  BEGIN
+      RETURN (SELF.latepenalties/SELF.itmsreturn)*100;
+  END;
+  MEMBER FUNCTION redflag
+      RETURN VARCHAR2
+  IS
+  BEGIN
+      RETURN SELF.latepenalties||'/'||SELF.itmsreturn;
+  END;
+  END;
+/
+
+/*  POPULATE acct TABLE.  */
+INSERT INTO acct VALUES(account_t('A1589',
+  name_t('John','Jones'),
+  address_t('20', 'Park Place','Toronto','L7A0A8'),'1987','4169671111'));
+INSERT INTO acct VALUES(account_t('A1590',
+  name_t('Chris', 'McDonald'),
+  address_t('102', 'Virginia Ave','Vaughan','O3J3L3'),'1991','6479635123'));
+INSERT INTO acct VALUES(account_t('A1591',
+  name_t('David','Berry'),
+  address_t('19', 'Atlantic Ave','Brampton','L3L9S9'),'1988','4168563215'));
+INSERT INTO acct VALUES(account_t('A1592',
+  name_t('Mary','Stevenson'),
+  address_t('19', 'Blues St','Barrie','J3D5KS'),'1992','4168756326'));
+INSERT INTO acct VALUES(account_t('A1593',
+  name_t('Peter','Burns'),
+  address_t('28', 'Bloor St','Toronto','L8D3H3'),'1999','4164875210'));
+INSERT INTO acct VALUES(account_t('A1594',
+  name_t('Amy','Thompson'),
+  address_t('89', 'Weston Rd','Woodbridge','G3G9D7'),'1993','6470269586'));
+INSERT INTO acct VALUES(account_t('A1595',
+  name_t('Lisa','Robinson'),
+  address_t('1', 'Pacific Ave','Newmarket','J3H9S9'),'1995','4160369874'));
+INSERT INTO acct VALUES(account_t('A1596',
+  name_t('Josie','Smith'),
+  address_t('83', 'King St','Toronto','N3N9F3'),'2001','4168750369'));
+INSERT INTO acct VALUES(account_t('A1597',
+  name_t('Jimmy','Jonas'),
+  address_t('7', 'Green Rd','Markham','K7Z3J3'),'1999','4165416461'));
+INSERT INTO acct VALUES(account_t('A1598',
+  name_t('Alex','Turner'),
+  address_t('100', 'Steeles Ave','North York','O3O2K1'),'1997','6476546546'));
+INSERT INTO acct VALUES(account_t('A1599',
+  name_t('Greg','Picket'),
+  address_t('9', 'Jane St','Maple','L6A9K3'),'1996','5194558884'));
+INSERT INTO acct VALUES(account_t('A1600',
+  name_t('Tania','Marcy'),
+  address_t('57', 'Yellowtree Rd','Richmondhill','J3J7A7'),'1992','5191112334'));
+INSERT INTO acct VALUES(account_t('A1601',
+  name_t('Mario','Luigi'),
+  address_t('99', 'Bloor St','Toronto','G2G3J3'), '1963','5192262247'));
+INSERT INTO acct VALUES(account_t('A1602',
+  name_t('Chris','Staven'),
+  address_t('180', 'Dufferin St','Thornhill','L0L2K8'),'1969','6472568878'));
+INSERT INTO acct VALUES(account_t('A1603',
+  name_t('Calvin','Klein'),
+  address_t('12', 'Bluewalker Lane','Bradford','L2F8S8'),'1999','5195563225'));
+
+/*  POPULATE rented TABLE.  */
+INSERT INTO rented VALUES(rented_t('R001',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1589'),3,2,10,2.50));
+INSERT INTO rented VALUES(rented_t('R002',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1590'),1,0,14,2.00));
+INSERT INTO rented VALUES(rented_t('R003',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1591'),4,5,25,4.50));
+INSERT INTO rented VALUES(rented_t('R004',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1592'),6,0,30,2.50));
+INSERT INTO rented VALUES(rented_t('R005',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1593'),3,1,32,0.00));
+INSERT INTO rented VALUES(rented_t('R006',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1595'),1,1,35,4.50));
+INSERT INTO rented VALUES(rented_t('R007',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1596'),4,0,23,0.00));
+INSERT INTO rented VALUES(rented_t('R008',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1597'),4,0,65,0.00));
+INSERT INTO rented VALUES(rented_t('R009',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1599'),3,1,32,1.50));
+INSERT INTO rented VALUES(rented_t('R010',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1600'),7,2,21,0.00));
+INSERT INTO rented VALUES(rented_t('R011',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1601'),6,0,26,0.00));
+INSERT INTO rented VALUES(rented_t('R012',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1603'),6,0,23,0.50));
+
+/*  POPULATE auth TABLE.  */
+INSERT INTO auth VALUES(author_t('AU001',name_t('Stephen','King'),1947));
+INSERT INTO auth VALUES(author_t('AU002',name_t('JK','Rowling'),1965));
+INSERT INTO auth VALUES(author_t('AU003',name_t('George','Orwell'),1903));
+INSERT INTO auth VALUES(author_t('AU004',name_t('Fyodor','Dostoevsky'),1821));
+INSERT INTO auth VALUES(author_t('AU005',name_t('Walt','Whitman'),1819));
+INSERT INTO auth VALUES(author_t('AU006',name_t('Jane','Austen'),1775));
+INSERT INTO auth VALUES(author_t('AU007',name_t('Toni','Morrison'),1931));
+INSERT INTO auth VALUES(author_t('AU008',name_t('Aldous','Huxley'),1984));
+INSERT INTO auth VALUES(author_t('AU009',name_t('Judy','Blume'),1938));
+INSERT INTO auth VALUES(author_t('AU010',name_t('Quentin','Tarantino'),1963));
+INSERT INTO auth VALUES(author_t('AU011',name_t('Nicholas','Stoller'),NULL));
+INSERT INTO auth VALUES(author_t('AU012',name_t('Arthur','Penn'),1922));
+INSERT INTO auth VALUES(author_t('AU013',name_t('Andrew','Stanton'),1965));
+INSERT INTO auth VALUES(author_t('AU014',name_t('Greg','Mottola'),1964));
+INSERT INTO auth VALUES(author_t('AU015',name_t('Martin','Scorsese'),1942));
+
+/*  POPULATE publish TABLE.  */
+INSERT INTO publish VALUES (publisher_t('P121','Doubleday',
+  address_t('1' ,'Freshway Ave','NYC','11J3DA')));
+INSERT INTO publish VALUES (publisher_t('P122','Schoolastic',
+  address_t('109' ,'Parkview Ave','NYC','33D8AS')));
+INSERT INTO publish VALUES (publisher_t('P123','Penguin Random',
+  address_t('37' ,'St James Place','NYC','14G5GJ')));
+INSERT INTO publish VALUES (publisher_t('P124','CreateSpace',
+  address_t('92' ,'Southsea Rd','NYC','86G3DD')));
+
+/*  POPULATE lib TABLE.  */
+INSERT INTO lib VALUES(library_t('001','Humber Summit',
+  address_t('28' ,'Steeles Ave','North York','K3J2G6')));
+INSERT INTO lib VALUES(library_t('002','York Public',
+  address_t('10' ,'Keele St','York','J9S1H4')));
+INSERT INTO lib VALUES(library_t('003','Reference library',
+  address_t('17' ,'Dufferin St','Toronto','L0J3H7')));
+INSERT INTO lib VALUES(library_t('004','Albion Branch',
+  address_t('2' ,'Redroad Ave','Etobicoke','H3H6S8')));
+
+/*  POPULATE book_item TABLE.  */
+INSERT INTO book_item VALUES(book_t('I1243',5,5,2,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU001'),1977,
+  (SELECT REF(l) FROM lib l WHERE l.lid = '003'),'The Shinning',
+  (SELECT REF(p) FROM publish p WHERE p.pid = 'P121')));
+INSERT INTO book_item VALUES(book_t('I1244',5,5,4,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU002'),1997,
+  (SELECT REF(l) FROM lib l WHERE l.lid = '002'),'Harry Potter',
+  (SELECT REF(p) FROM publish p WHERE p.pid = 'P122')));
+INSERT INTO book_item VALUES(book_t('I1245',5,1,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU003'),1949,
+  (SELECT REF(l) FROM lib l WHERE l.lid = '004'),'1984',
+  (SELECT REF(p) FROM publish p WHERE p.pid = 'P123')));
+INSERT INTO book_item VALUES(book_t('I1250',4,1,1,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU004'),1868,
+  (SELECT REF(l) FROM lib l WHERE l.lid = '002'),'The Idiot',
+  (SELECT REF(p) FROM publish p WHERE p.pid = 'P123')));
+INSERT INTO book_item VALUES(book_t('I1251',3,3,2,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU005'),1855,
+  (SELECT REF(l) FROM lib l WHERE l.lid = '004'),'Leaves of Grass',
+  (SELECT REF(p) FROM publish p WHERE p.pid = 'P123')));
+INSERT INTO book_item VALUES(book_t('I1252',3,3,2,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU006'),1813,
+  (SELECT REF(l) FROM lib l WHERE l.lid = '004'),'Pride and Preju.',
+  (SELECT REF(p) FROM publish p WHERE p.pid = 'P124')));
+INSERT INTO book_item VALUES(book_t('I1248',2,2,1,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU007'),1987,
+  (SELECT REF(l) FROM lib l WHERE l.lid = '001'),'Beloved',
+  (SELECT REF(p) FROM publish p WHERE p.pid = 'P123')));
+INSERT INTO book_item VALUES(book_t('I1249',5,0,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU008'),1932,
+  (SELECT REF(l) FROM lib l WHERE l.lid = '003'),'Brave New World',
+  (SELECT REF(p) FROM publish p WHERE p.pid = 'P123')));
+INSERT INTO book_item VALUES(book_t('I1255',4,0,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU009'),1980,
+  (SELECT REF(l) FROM lib l WHERE l.lid = '004'),'Superfudge',
+  (SELECT REF(p) FROM publish p WHERE p.pid = 'P122')));
+INSERT INTO book_item VALUES(book_t('I1256',2,0,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU009'),1990,
+  (SELECT REF(l) FROM lib l WHERE l.lid = '004'),'Fudgeamania',
+  (SELECT REF(p) FROM publish p WHERE p.pid = 'P122')));
+
+/*  POPULATE video_item TABLE.  */
+INSERT INTO video_item VALUES(video_t('I1246',5,1,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU010'),1994,
+  (SELECT REF(l) FROM lib l WHERE l.lid= '004'),'Pulp Fiction'));
+INSERT INTO video_item VALUES(video_t('I1247',3,0,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU011'),2008,
+  (SELECT REF(l) FROM lib l WHERE l.lid= '003'),'Forget Sarah Marsh'));
+INSERT INTO video_item VALUES(video_t('I1258',4,0,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU012'),1970,
+  (SELECT REF(l) FROM lib l WHERE l.lid= '001'),'Little Big Man'));
+INSERT INTO video_item VALUES(video_t('I1241',5,3,1,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU010'),2003,
+  (SELECT REF(l) FROM lib l WHERE l.lid= '001'),'Kill Bill Vol 1'));
+INSERT INTO video_item VALUES(video_t('I1242',5,4,1,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU013'),2008,
+  (SELECT REF(l) FROM lib l WHERE l.lid= '001'),'Wall E'));
+INSERT INTO video_item VALUES(video_t('I1253',5,4,1,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU014'),2007,
+  (SELECT REF(l) FROM lib l WHERE l.lid= '002'),'Superbad'));
+INSERT INTO video_item VALUES(video_t('I1254',4,0,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU015'),1990,
+  (SELECT REF(l) FROM lib l WHERE l.lid= '004'),'Goodfellas'));
+INSERT INTO video_item VALUES(video_t('I1257',5,2,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU015'),1995,
+  (SELECT REF(l) FROM lib l WHERE l.lid= '003'),'Casino'));
+INSERT INTO video_item VALUES(video_t('I1260',5,1,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU010'),2012,
+  (SELECT REF(l) FROM lib l WHERE l.lid= '002'),'Django Unchained'));
+INSERT INTO video_item VALUES(video_t('I1259',4,0,0,
+  (SELECT REF(u) FROM auth u WHERE u.au_id = 'AU015'),2013,
+  (SELECT REF(l) FROM lib l WHERE l.lid= '003'),'Wolf of Wall St'));
+
+/*  POPULATE txn TABLE.  */
+INSERT INTO txn VALUES(transaction_t('T10001',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1593'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'I1243'),'15-Nov-20'));
+INSERT INTO txn VALUES(transaction_t('T10002',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1594'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'I1244'),'15-Nov-20'));
+INSERT INTO txn VALUES(transaction_t('T10003',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1595'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'I1241'),'15-Nov-20'));
+INSERT INTO txn VALUES(transaction_t('T10004',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1599'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'I1242'),'15-Nov-20'));
+INSERT INTO txn VALUES(transaction_t('T10005',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1600'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'I1248'),'20-Nov-20'));
+INSERT INTO txn VALUES(transaction_t('T10006',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1601'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'I1251'),'20-Nov-20'));
+INSERT INTO txn VALUES(transaction_t('T10007',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1602'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'I1251'),'20-Nov-20'));
+INSERT INTO txn VALUES(transaction_t('T10008',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1589'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'I1252'),'20-Nov-20'));
+INSERT INTO txn VALUES(transaction_t('T10009',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1590'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'I1252'),'25-Nov-20'));
+INSERT INTO txn VALUES(transaction_t('T10010',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1591'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'I1253'),'25-Nov-20'));
+INSERT INTO txn VALUES(transaction_t('T10011',
+  (SELECT REF(a) FROM acct a WHERE a.aid = 'A1603'),
+  (SELECT REF(v) FROM video_item v WHERE v.iid = 'A1248'),'25-Nov-20'));
+
+
+/*
+    QUERY 1:
+    SELECT ALL BOOKS FROM ALBION BRANCH LIBRARY.
+*/
+SELECT i.book_name, i.loid.libname
+  FROM book_item i
+  WHERE i.loid.lid = '004';
+
+/*
+    QUERY 2:
+    SELECT ALL CUSTOMERS WHO OWE $1.50 OR MORE.
+*/
+SELECT r.aoid.sname.fullname(),r.balance
+  FROM rented r
+  WHERE r.balance > 1.50;
+
+/*
+    QUERY 3:
+    SELECT ALL CUSTOMERS AND BALANCE, ORDER BY BALANCE.
+*/
+SELECT r.aoid.sname.fullname(),r.balance
+  FROM rented r
+  ORDER BY r.balance DESC;
+
+/*
+    QUERY 4:
+    SELECT BOOK NAMES WITH AUTHOR BIO AND YEAR RELEASED IN THE 1800s.
+*/
+SELECT b.book_name, b.yr_release, b.auo_id.bio()
+  FROM book_item b
+  WHERE b.yr_release > 1799
+    AND b.yr_release < 1900;
+
+/*
+    QUERY 5:
+    SELECT ALL BOOKS, WITH AUTHOR BIO AND RELEASE YEAR, WHERE THE
+    ITEM QUANTITY IS GREATER THAN 3.
+*/
+SELECT b.book_name, b.auo_id.bio(), b.yr_release, b.itm_qty
+  FROM book_item b
+  WHERE b.itm_qty > 3
+  ORDER BY b.itm_qty;
+
+/*
+    QUERY 6:
+    SELECT ALL BOOKS IN THE 1800s WITH QUANTITY GREATER TO OR EQUAL TO 3.
+*/
+SELECT b.book_name, b.auo_id.sname.fullname(), b.yr_release, b.itm_qty
+  FROM book_item b
+  WHERE (b.itm_qty >= 3)
+    AND (b.yr_release > 1799)
+    AND (b.yr_release < 1900);
+
+/*
+    QUERY 7:
+    SHOW FULL NAMES AND AGE FOR CUSTOMERS WHO HAVE RENTED AN ITEM FROM YORK
+    PUBLIC LIBRARY AND HAVE AN OUTSTANDING BALANCE.
+*/
+SELECT r.aoid.sname.fullname(), r.aoid.age(2020), r.balance
+  FROM rented r
+  WHERE balance > 0 AND r.aoid
+  IN (SELECT t.aoid
+      FROM txn t
+      WHERE t.ioid.loid.libname = 'York Public'
+     );
+
+/*
+
+    QUERY 8:
+    SHOW CUSTOMERS AND THEIR AGE WHO ARE RENTING MOVIES FROM THE 2000s, ALONG
+    WITH THE MOVIE TITLE AND RELEASE YEAR.
+*/
+SELECT t.aoid.sname.lastn, t.aoid.age(2020), v.vid_name, v.yr_release
+  FROM txn t, video_item v
+  WHERE t.ioid
+  IN (SELECT REF(v)
+      FROM video_item v
+      WHERE v.yr_release > 1999 AND v.yr_release < 2010
+    ) AND v.iid = t.ioid.iid;
+
+/*
+    QUERY 9:
+    SHOWS CUSTOMERS WHO HAVE LATE PENALTIES AND SORTS BY MOST LATE_PENALTIES
+    TO LEAST.
+*/
+SELECT r.aoid.sname.fullname(),r.balance,r.avgreturn()
+  FROM rented r
+  WHERE r.avgreturn() > 0
+  ORDER BY r.avgreturn() DESC;
+/
+
+/*
+    QUERY 10: 
+    SHOWS CUSTOMERS WHO ARE RED FLAGGED AND HAVE A ITEMS DUE.
+*/
+SELECT r.aoid.sname.fullname(),r.redflag(),r.aoid.phone
+  FROM rented r
+  WHERE r.itmsrent > 0 AND r.avgreturn() > 10
+  ORDER BY r.avgreturn() DESC;
+/
